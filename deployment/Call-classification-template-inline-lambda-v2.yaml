@@ -332,7 +332,7 @@ Resources:
                     import os
                     import cfnresponse
 
-                    def lambda_handler(event, context):
+                    def handler(event, context):
                         old_bucket_name = os.environ['existingBucket']
                         old_prefix = os.environ['exisingBucketPrefix']
                         new_bucket_name = os.environ['newBucket']
