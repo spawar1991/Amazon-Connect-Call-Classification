@@ -1,0 +1,411 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+    "Call Classification For Amazon Connect
+    - S3 Bucket for Website Assets with CCP Panel Integration
+    - A Lambda triggered to update the call Classification contact attributes to the initial contact details
+    - cloudfront URL which will be serving Static Website
+    - APIGateway Endpoint Deployment with Lambda Authorizer
+    "
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+            default: Existing configuration
+            Parameters:
+              - existingLambdaZipsS3Bucket
+              - existingzipsS3KeyPrefix
+      - Label:
+            default: Amazon S3 Configuration
+        Parameters:
+          - S3BucketNameForWebSite
+      - Label:
+            default: Amazon Connect Configuration
+        Parameters:
+          - AmazonConnectInstanceId
+      - Label:
+            default: Cloudfront Configuration
+        Parameters:
+          - cloudFrontPriceClass
+    ParameterLabels:
+        s3BucketName:
+            default: Call Classification website Bucket Name
+        existingS3Path:
+            default: Existing S3 Bucket Name
+        existingS3BucketName:
+            default: Existing Path in the existing S3 Bucket
+
+Parameters:
+    S3BucketNameForWebSite:
+        Type: String
+        Default: "new-website-bucket-name"
+        Description: "Enter the new (globally unique) name you would like to use for the Amazon S3 bucket where we will store the website assets.This template will fail to deploy if the bucket name you chose is currently in use."
+        AllowedPattern: '(?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    existingLambdaZipsS3Bucket:
+        Type: String
+        Default: "deployment-bucket"
+        Description: "Enter the (existing) S3 bucket name currently in use & you have stored the Lambda deployment package code to deploy."
+    existingzipsS3KeyPrefix:
+        Type: String
+        Default: "Deployment/"
+        Description: "The Amazon S3 prefix where the lambda code files will be saved(must end in /)"
+    existingwebsiteS3KeyPrefix:
+        Type: String
+        Default: "WebsiteArtifacts/"
+        Description: "The Amazon S3 prefix where the Static Website code files is located(must end in /)"
+    cloudFrontPriceClass:
+        Type: String
+        Default: PriceClass_100
+        AllowedValues:
+            - PriceClass_100
+            - PriceClass_200
+            - PriceClass_All
+        ConstraintDescription: "Allowed Price Classes PriceClass_100 PriceClass_200 and PriceClass_All"
+        Description: "Specify the CloudFront price class. See https://aws.amazon.com/cloudfront/pricing/ for a description of each price class."
+    ApiGatewayStageName:
+        Type: "String"
+        AllowedPattern: "^[a-z0-9]+$"
+        Default: "call"
+    LambdaFunctionName:
+        Type: "String"
+        AllowedPattern: "^[a-zA-Z0-9]+[a-zA-Z0-9-]+[a-zA-Z0-9]+$"
+        Default: "my-lambda-function"
+    AmazonConnectInstanceId:
+        Type: "String"
+        AllowedPattern: "^[a-zA-Z0-9]+[a-zA-Z0-9-]+[a-zA-Z0-9]+$"
+        Default: "4cf45b46-9ca6-4ed0-b1a3-2c18bdcb715b"
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Amazon S3 Configuration
+        Parameters:
+          - S3BucketNameForWebSite
+      - Label:
+          default: Amazon CloudFront Configuration
+        Parameters:
+          - cloudFrontPriceClass
+    ParameterLabels:
+      S3BucketNameForWebSite:
+        default: Website Bucket Name
+      cloudFrontPriceClass:
+        default: Price Class
+Outputs:
+    createS3BucketOP:
+        Description: Bucket contains all the call recordings and sample contactflow
+        Value: !GetAtt [createWebSiteS3Bucket, WebsiteURL]
+    createS3BucketSSLOP:
+        Description:  Bucket contains all the call recordings and sample contactflow
+        Value: !Join ['', ['https://', !GetAtt [createWebSiteS3Bucket, DomainName]]]
+    cloudfrontEndpoint:
+        Value: !Join
+          - ''
+          - - 'https://'
+            - !GetAtt [CloudFrontDistribution, DomainName]
+            - '/index.html'
+        Description: Endpoint for Cloudfront distribution
+    apiGatewayInvokeURL:
+        Value: !Sub "https://${APIGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}"
+    lambdafunctionArn:
+        Value: !GetAtt "CallclassificationupdateattributeslambdaFunction.Arn"    
+Resources:      
+    createWebSiteS3Bucket:
+            Type: 'AWS::S3::Bucket'
+            DeletionPolicy: Retain
+            Properties:
+                BucketName: !Ref S3BucketNameForWebSite
+                BucketEncryption:
+                    ServerSideEncryptionConfiguration:
+                      - ServerSideEncryptionByDefault:
+                          SSEAlgorithm: AES256
+                PublicAccessBlockConfiguration:
+                    BlockPublicAcls: True
+                    BlockPublicPolicy: True
+                    IgnorePublicAcls: True
+                    RestrictPublicBuckets: True
+                Tags:
+                    -
+                      Key: Description
+                      Value: Object Storage
+                VersioningConfiguration:
+                    Status: Enabled
+
+    S3BucketPolicy:
+            Type: AWS::S3::BucketPolicy
+            DependsOn:
+                - createWebSiteS3Bucket
+                - cloudfrontoriginaccessidentity
+            Properties:
+                Bucket: !Ref createWebSiteS3Bucket
+                PolicyDocument:
+                    Statement:
+                        -
+                            Sid: "GetObjectAcces"
+                            Action:
+                                - "s3:GetObject"
+                            Effect: "Allow"
+                            Principal:
+                                CanonicalUser:
+                                    Fn::GetAtt: [ cloudfrontoriginaccessidentity , S3CanonicalUserId ]
+                            Resource:
+                                !Sub ${createWebSiteS3Bucket.Arn}/CCP/*
+                                
+    cloudfrontoriginaccessidentity:
+            Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+            Properties:
+              CloudFrontOriginAccessIdentityConfig:
+                Comment: 'CloudFront OAI for Call Classification Dashboard'
+    
+    CloudFrontDistribution:
+            Type: AWS::CloudFront::Distribution
+            DependsOn:
+                - createWebSiteS3Bucket
+            Properties:
+              DistributionConfig:
+                Origins:
+                - DomainName:
+                    !Join
+                        - ''
+                        - - !Ref S3BucketNameForWebSite
+                          - .s3.amazonaws.com
+                  Id: !Ref S3BucketNameForWebSite
+                  S3OriginConfig:
+                    OriginAccessIdentity:
+                        !Join
+                            - ''
+                            - - 'origin-access-identity/cloudfront/'
+                              - !Ref cloudfrontoriginaccessidentity
+                Enabled: 'true'
+                Logging:
+                    Bucket: !GetAtt createWebSiteS3Bucket.DomainName
+                    Prefix: 'logs/'
+                    IncludeCookies: 'true'
+                Comment: CloudFront for Call Classification Dashboard
+                DefaultRootObject: index.html
+                DefaultCacheBehavior:
+                    AllowedMethods:
+                        - DELETE
+                        - GET
+                        - HEAD
+                        - OPTIONS
+                        - PATCH
+                        - POST
+                        - PUT
+                    TargetOriginId: !Ref S3BucketNameForWebSite
+                    ForwardedValues:
+                        QueryString: true
+                        Cookies:
+                            Forward: all
+                    ViewerProtocolPolicy: redirect-to-https
+                PriceClass: !Ref cloudFrontPriceClass
+                Restrictions:
+                    GeoRestriction:
+                        RestrictionType: whitelist
+                        Locations:
+                            - IN
+                            - GB
+    APIGatewayRestApi :
+        Type : AWS::ApiGateway::RestApi
+        Properties :
+            Name : CallClassificationEndpoint
+            Description: "API used for Updating Contact attributes in Amazon Connect Contact Center"
+            FailOnWarnings : true
+            Parameters:
+                endpointConfigurationTypes: REGIONAL
+    ApiGatewayStack:
+        Type: "AWS::ApiGateway::Resource"
+        Properties: 
+            RestApiId: 
+                Ref: APIGatewayRestApi
+            ParentId: !GetAtt
+                - APIGatewayRestApi
+                - RootResourceId
+            PathPart: "classification"
+    ApiGatewayRootMethod:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: "NONE"
+            HttpMethod: "POST"
+            Integration:
+                IntegrationHttpMethod: "POST"
+                Type: "AWS_PROXY"
+                Uri: !Sub
+                    - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations"
+                    - lambdaArn: !GetAtt "CallclassificationupdateattributeslambdaFunction.Arn"
+                IntegrationResponses:
+                  - StatusCode: 200
+                    ResponseTemplates:
+                        application/json: ""
+                    ResponseParameters:
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+            MethodResponses:
+              - StatusCode: 200
+                ResponseModels:
+                    application/json: "Empty"
+                ResponseParameters:
+                    method.response.header.Access-Control-Allow-Origin: False
+            ResourceId: !Ref "ApiGatewayStack"
+            RestApiId: !Ref "APIGatewayRestApi"
+    apiGatewayDeployment:
+        Type: "AWS::ApiGateway::Deployment"
+        DependsOn:
+            - "ApiGatewayRootMethod"
+        Properties:
+            RestApiId: !Ref "APIGatewayRestApi"
+            StageName: !Ref "ApiGatewayStageName"
+    CallclassificationupdateattributeslambdaFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                S3Bucket: !Ref "existingLambdaZipsS3Bucket"
+                S3Key: !Join ["", [!Ref existingzipsS3KeyPrefix, 'call_classification.zip']]
+            Description: "Function to fetch data sent by API Gateway and Update in Amazon Connect"
+            FunctionName: !Ref "LambdaFunctionName"
+            Handler: "lambda_function.lambda_handler"
+            MemorySize: 128
+            Role: !GetAtt "lambdaIAMExecutionRole.Arn"
+            Runtime: "python3.7"
+            Timeout: 30
+            Environment:
+                Variables:
+                    InstanceId: !Ref "AmazonConnectInstanceId"
+    LambdaApiGatewayInvokePermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !GetAtt "CallclassificationupdateattributeslambdaFunction.Arn"
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGatewayRestApi}/*/POST/classification"   
+    lambdaIAMExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Action:
+                        - "sts:AssumeRole"
+                    Effect: "Allow"
+                    Principal:
+                        Service:
+                        - "lambda.amazonaws.com"
+            Policies:
+              - PolicyName: "lambdaIAMExecutionRoleforlogs"
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                      - Sid: "LambdaCloudwatchLogs"
+                        Action:
+                            - "logs:CreateLogGroup"
+                            - "logs:CreateLogStream"
+                            - "logs:PutLogEvents"
+                        Effect: "Allow"
+                        Resource:
+                            - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*"
+                      - Sid: "UpdateContactAttributes"
+                        Action:
+                            - "connect:UpdateContactAttributes"
+                            - "connect:DescribeInstance"
+                            - "connect:GetContactAttributes"
+                            - "connect:ListInstances"
+                        Effect: "Allow"
+                        Resource:
+                            - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:instance/${AmazonConnectInstanceId}"
+                            - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:instance/${AmazonConnectInstanceId}/contact/*"
+    lambdaLogGroup:
+        Type: "AWS::Logs::LogGroup"
+        Properties:
+            LogGroupName: !Sub "/aws/lambda/${LambdaFunctionName}"
+            RetentionInDays: 5
+    CopyFromBucketlambdaFunctionInvoker: 
+        Type: "Custom::CopyFromBucketlambdaFunctionInvoker"
+        Properties: 
+            ServiceToken: !GetAtt "CopyWebsiteFromBucketlambdaFunction.Arn"
+    CopyWebsiteFromBucketlambdaFunction:
+        DependsOn: "createWebSiteS3Bucket"
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                ZipFile: |
+                    import json
+                    import boto3
+                    import os
+                    import cfnresponse
+
+                    def lambda_handler(event, context):
+                        old_bucket_name = os.environ['existingBucket']
+                        old_prefix = os.environ['exisingBucketPrefix']
+                        new_bucket_name = os.environ['newBucket']
+                        new_prefix = os.environ['newBucketPrefix']
+
+                        s3 = boto3.resource('s3')
+
+                        old_bucket = s3.Bucket(old_bucket_name)
+                        new_bucket = s3.Bucket(new_bucket_name)
+                        responseData = {}
+                        try:
+                            for obj in old_bucket.objects.filter(Prefix=old_prefix):
+                                old_source = { 'Bucket': old_bucket_name,
+                                            'Key': obj.key}
+                                # replace the prefix
+                                new_key = new_prefix + obj.key[len(old_prefix):]
+                                new_obj = new_bucket.Object(new_key)
+                                new_obj.copy(old_source)
+                            responseData['statusCode'] = 200
+                            cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+                        except Exception as e:
+                            responseData['statusCode'] = str(e)
+                            cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
+            Description: "Function to copy website assets from Cental S3 bucket to the S3 Website Bucket (Within the same AWS Account)"
+            FunctionName: !Sub "${AWS::StackName}-${AWS::Region}-CopyFromSourceToDestinationBucket"
+            Handler: "index.handler"
+            MemorySize: 256
+            Role: !GetAtt "lambdacopyartifactsIAMExecutionRole.Arn"
+            Runtime: "python3.7"
+            Timeout: 30
+            Environment:
+                Variables:
+                    existingBucket: !Ref "existingLambdaZipsS3Bucket"
+                    exisingBucketPrefix: !Ref "existingwebsiteS3KeyPrefix"
+                    newBucket: !Ref "S3BucketNameForWebSite"
+                    newBucketPrefix: "CCP/"
+    lambdacopyartifactsIAMExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Action:
+                        - "sts:AssumeRole"
+                    Effect: "Allow"
+                    Principal:
+                        Service:
+                        - "lambda.amazonaws.com"
+            Policies:
+              - PolicyName: "lambdacopys3artifactsIAMExecutionRoleforwebsite"
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                      - Sid: "LambdaCloudwatchLogs"
+                        Action:
+                            - "logs:CreateLogGroup"
+                            - "logs:CreateLogStream"
+                            - "logs:PutLogEvents"
+                        Effect: "Allow"
+                        Resource:
+                            - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+                      - Sid: "AllowS3CopyObjectAccess"
+                        Action:
+                            - "s3:ListBucket"
+                            - "s3:GetObject"
+                            - "s3:ListAllMyBuckets"
+                            - "s3:PutObject"
+                            - "s3:PutBucketTagging"
+                            - "s3:PutObjectTagging"
+                        Effect: "Allow"
+                        Resource:
+                            - !Sub "arn:aws:s3:::${existingLambdaZipsS3Bucket}"
+                            - !Sub "arn:aws:s3:::${existingLambdaZipsS3Bucket}/*"
+                            - !Sub "arn:aws:s3:::${S3BucketNameForWebSite}"
+                            - !Sub "arn:aws:s3:::${S3BucketNameForWebSite}/*" 
+       
