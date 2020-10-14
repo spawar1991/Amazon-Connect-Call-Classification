@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DBS - CCP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- <link type="text/css" href="css/style.css" rel="stylesheet" /> -->
+    <!-- <link type="text/css" href="css/copybutton.css" rel="stylesheet" />
+    <link type="text/css" href="css/menuStyle.css" rel="stylesheet" />
+    <link type="text/css" href="css/tipsy.css" rel="stylesheet" /> -->
+    <link
+      type="text/css"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <script type="text/javascript" src="js/jquery-3.1.0.min.js"></script>
+    <script type="text/javascript" src="js/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/jquery.dataTables.min.js"></script>
+
+    <script
+      type="text/javascript"
+      src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="bootstrap-sf1-0.1.0-beta.16/js/docs.js"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/json2/20160511/json2.min.js"
+      type="text/javascript"
+    ></script>
+
+    <script type="text/javascript" src="js/aws-credentials.js"></script>
+    <script type="text/javascript" src="js/connectCCP.js"></script>
+    <script type="text/javascript" src="js/clipboard.min.js"></script>
+    <script type="text/javascript" src="js/demo-common.js"></script>
+    <script type="text/javascript" src="js/progressbar.js"></script>
+
+    <script type="text/javascript">
+      $(function() {
+        $("#submit-button").click(function() {
+
+
+          if($('#category').val().length ==0)
+          {
+              $('#validation').html('Please Select a Category');
+              return;
+          }
+          var category = document.getElementById("category").value
+            ? document.getElementById("category").value
+            : "NULL";
+         var sub_category = document.getElementById("sub_category").value? document.getElementById("sub_category").value: "NULL";
+          var call_reason = document.getElementById("call-reason").value
+            ? document.getElementById("call-reason").value
+            : "NULL";
+          var contactID = document.getElementById("contactID").value;
+          //var contactID = "b74af2be-47cd-4a06-8321-f35c816c8c3a";
+          //var instaceId="7981ef13-f36a-401c-bddb-b78f93650576";
+          var instanceId=document.getElementById("instanceARN").value;
+          $("#section-main").hide();
+          var data = {
+            category: category,
+            sub_category: sub_category,
+            callreason: call_reason,
+            contactID: contactID,
+            instanceId: instanceId
+          };
+         // console.log(JSON.stringify(data));
+          $.ajax({
+            type: "POST",
+            url:
+              " https://nihuc8rbtg.execute-api.eu-west-2.amazonaws.com/dbs_cc_api/dbs-cc-api",
+            dataType: "json",
+            crossDomain: "true",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function() {
+              // alert("Data drop completed");
+              //alert("Thank you for classifying the call");
+              $("#section-call").show();
+              $("#callsification-success").show();
+              //console.log("Data drop completed");
+            },
+            error: function() {
+              // show an error message
+              //  alert("UnSuccessfull");
+              //alert("Classifying the call failed");
+              $("#section-call").show();
+              $("#callsification-fail").show();
+              console.log("UnSuccessfull");
+            }
+          });
+          document.getElementById("category").value = "";
+          document.getElementById("sub_category").value = "";
+          document.getElementById("call-reason").value = "";
+          document.getElementById("contactID").value = "";
+          document.getElementById("instanceARN").value = "";
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <script>
+      var clipboard = new Clipboard(".btn");
+      clipboard.on("success", function(e) {
+        console.log(e);
+      });
+
+      clipboard.on("error", function(e) {
+        console.log(e);
+      });
+    </script>
+
+    <style>
+      html {
+        height: 100%;
+      }
+      body {
+        height: 100%;
+        background: #fff;
+        font-family: AmazonEmber_Rg, Helvetica Neue, Helvetica, Arial,
+          sans-serif !important;
+        font-size: 0.9rem;
+      }
+      b {
+        font-weight: normal;
+      }
+      iframe {
+        width: calc(100%);
+        height: 100%;
+        border: 0;
+        margin: 0;
+      }
+      section {
+        border-radius: 0px;
+        border: none;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+        width: calc(100% - 2rem);
+        box-shadow: none;
+      }
+      .container {
+        width: 1024px;
+        height: 100%;
+        margin: auto;
+      }
+      #ccpContainer {
+        width: calc(32%);
+        height: 80%;
+        overflow: hidden;
+        float: left;
+        padding: 0 1rem;
+      }
+      .logo {
+        padding: 0 1rem;
+        box-shadow: none;
+      }
+      #section-main {
+        padding: 2rem 0;
+        overflow: auto;
+        width: calc(68%);
+      }
+      #section-call {
+        padding: 1rem 0;
+
+        overflow: auto;
+        width: calc(68%);
+      }
+      #contactborder p {
+        margin: 0;
+        display: table;
+      }
+      #contactborder p span {
+        display: table-cell;
+        margin: auto;
+        vertical-align: middle;
+      }
+
+      #section-custinfo {
+        padding: 1rem;
+        overflow: auto;
+        width: calc(68%);
+        box-shadow: none;
+        border-radius: 0.3rem;
+        background: linear-gradient(
+            rgba(51, 51, 51, 0.4),
+            rgba(51, 51, 51, 0.4)
+          ),
+          #4393ca;
+        color: #fff;
+      }
+      #section-custinfo span#phoneNumber {
+        font-size: 1.5rem;
+        color: yellow;
+        padding: 0 1rem;
+      }
+      footer {
+        width: 100%;
+        clear: both;
+        text-align: center;
+      }
+      textarea {
+        overflow-y: scroll;
+        height: 100px;
+        resize: none; /* Remove this if you want the user to resize the textarea */
+      }
+    </style>
+
+    <div class="container">
+      <section class="logo">
+        <img src="/DBS_Logo.png" style = "width:180px" />
+      </section>
+
+      <section id="ccpContainer">
+        <div id="ccpContainer1">
+          <script>
+            //Connect CCP Integration
+            var spanCounter = 0;
+            var transcriptText = "";
+            var ws;
+            var container = document.getElementById("ccpContainer");
+            var instanceAlias = alias;
+
+
+			var loginURL = `https://localhost/adfs/ls/idpinitiatedsignon.aspx?RelayState=RPID%3Durn%253Aamazon%253Awebservices%26RelayState%3Dhttps%253A%252F%252Feu-west-2.console.aws.amazon.com%252Fconnect%252Ffederate%252Feaf4032f-7193-4444-9b7d-1c4fdd320852%253Fdestination%253D%25252Fconnect%25252Fccp`;
+			var ccpURL = `https://dbsdevsaml.awsapps.com/connect/ccp-v2`;
+            var loginWindow;
+            var fromLanguage;
+            const fromLanguageDict = {
+              "en-US": "en",
+              "es-US": "es"
+            };
+            window.ccp = window.ccp || {};
+            connect.core.initCCP(container, {
+              ccpUrl: ccpURL,
+              loginPopup: false,
+              softphone: {
+                allowFramedSoftphone: true,
+                disableRingtone: false
+              }
+            });
+            connect.core
+              .getEventBus()
+              .subscribe(connect.EventType.ACK_TIMEOUT, function() {
+                try {
+                  connect
+                    .getLog()
+                    .warn(
+                      "ACK_TIMEOUT occurred, attempting to pop the login page."
+                    );
+                  var width = 500;
+                  var height = 600;
+                  var left = screen.width / 2 - width / 2;
+                  var top = screen.height / 2 - height / 2;
+
+                  loginWindow = window.open(
+                    loginURL,
+                    true,
+                    "width=" +
+                      width +
+                      ",height=" +
+                      height +
+                      ",menubar=no,status=no,toolbar=no,left=" +
+                      left +
+                      ",top=" +
+                      top
+                  );
+                } catch (e) {
+                  connect
+                    .getLog()
+                    .error(
+                      "ACK_TIMEOUT occurred but we are unable to open the login popup." +
+                        e
+                    )
+                    .withException(e);
+                }
+
+                connect.core
+                  .getEventBus()
+                  .subscribe(connect.EventType.ACKNOWLEDGE, function() {
+                    closeLoginWindow();
+                  });
+              });
+
+            function closeLoginWindow() {
+              loginWindow.close();
+            }
+
+            connect.agent(agent => {
+              console.log(JSON.stringify(agent));
+              window.ccp.agent = agent;
+            });
+
+            var c;
+            var contactID;
+            connect.contact(function(contact) {
+              c = contact;
+              console.log(c);
+              console.log(JSON.stringify(c));
+
+              c.onConnecting(function(c) {
+                contactID = contact.contactId;
+                var attr = c.getAttributes();
+                console.log("Attr:::::" + JSON.stringify(attr));
+                console.log(
+                  "getConnections111:::::" + JSON.stringify(c.getConnections())
+                );
+                var c1 = c.getConnections()[1];
+                var c2 = c.getStatus();
+                console.log(
+                  "c2:::" +
+                    c.getAgentConnection().connectionId +
+                    " :: " +
+                    JSON.stringify(c2)
+                );
+                console.log(
+                  "Phonenumber111:::" +
+                    c1.getAddress()["phoneNumber"] +
+                    " ::: " +
+                    JSON.stringify(c1.getAddress()["phoneNumber"])
+                );
+                document.getElementById("contactID").value = c.contactId;
+                console.log("Phonenumber::::" + attr.CustomerNumber.value);
+                document.getElementById("phoneNumber").innerHTML =
+                  attr.CustomerNumber.value;
+                document.getElementById("instanceARN").value =
+                  attr.InstanceARN.value.split("/")[1];
+
+              });
+
+              c.onRefresh(c => {
+                console.log(`contact refreshed`);
+                //fillTable(c.getAttributes());
+              });
+
+              c.onConnected(() => {
+                //build the relationship between the connectionId and the contactId
+                // sendMessage2(contactID);
+              });
+            });
+
+            // Reset form after agent becomes available again
+            connect.agent(agent => {
+              console.log("agent::::" + JSON.stringify(agent));
+              agent.onStateChange(event => {
+                console.log("Event::::" + JSON.stringify(event));
+                if (event.newState === "Available") {
+                  try {
+                    $("#section-custinfo").show();
+                    $("#section-main").hide();
+                    $("#section-call").hide();
+                  } catch (e) {
+                    console.log(e);
+                  }
+                } else if (event.newState === "AfterCallWork") {
+                  try {
+                    $("#section-main").show();
+                    $("#section-custinfo").show();
+                  } catch (e) {
+                    console.log(e);
+                  }
+                } else if (
+                  event.newState === "Busy" ||
+                  event.newState === "PendingBusy"
+                ) {
+                  try {
+                    $("#section-custinfo").show();
+                  } catch (e) {
+                    console.log(e);
+                  }
+                }
+              });
+            });
+          </script>
+        </div>
+      </section>
+      <section id="section-custinfo" style="display:none">
+        <!-- <section id="section-custinfo"> -->
+        <div id="contactborder">
+          <p><span>Customer Phone Number:</span> <span id="phoneNumber"></span></p>
+        </div>
+      </section>
+      <section id="section-call" style="display:none">
+        <div
+          id="callsification-success"
+          style="display:none"
+          class="alert alert-success"
+          role="alert"
+        >
+          Thank you for classifying the call
+        </div>
+
+        <div
+          id="callsification-fail"
+          style="display:none"
+          class="alert alert-danger"
+          role="alert"
+        >
+          Classifying the call failed
+        </div>
+      </section>
+      <section id="section-main" style="display:none">
+        <!-- <section id="section-main">   -->
+        <!-- <form name="contactDetails" id="contactDetails">  -->
+        <div class="form-group">
+          <label for="exampleFormControlSelect1">Category<span style="color:red">*</span></label>
+          <select
+            size="1"
+            id="category"
+			      name= "category"
+            class="form-control"
+            required
+          >
+            <option label="-- Select --" value=""></option>
+            <option value="General Enquiries">General Enquiries </option>
+            <option value="Disclosure Applications">Disclosure Applications</option>
+            <option value="Update Service">Update Service</option>
+            <option value="Barring">Barring</option>
+			<option value="DBS Online Account">DBS Online Account</option>
+			<option value="Temporary Category">Temporary Category </option>
+          </select>
+          <span id="validation" style="color: red; padding-left: 10px"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="exampleFormControlSelect2">Sub Category</label>
+          <select id="sub_category" name="sub_category" class="form-control">
+            <option label="-- Select --" value=""></option>
+            <option data-group='General Enquiries' value="DPA Fail">DPA Fail</option>
+            <option data-group='General Enquiries' value="ID Documents">ID Documents</option>
+            <option data-group='General Enquiries' value="Other Code">Other Code</option>
+
+            <option data-group='Disclosure Applications' value="Progress Check">Progress Check </option>
+            <option data-group='Disclosure Applications' value="Delays and Hardship">Delays and Hardship</option>
+            <option data-group='Disclosure Applications' value="Reprints">Reprints </option>
+            <option data-group='Disclosure Applications' value="Filtering and Disputes">Filtering and Disputes </option>
+
+            <option data-group='Update Service' value="Progress Check">C Number </option>
+            <option data-group='Update Service' value="Delays and Hardship">Expiry Queries</option>
+            <option data-group='Update Service' value="Reprints">Auto Renew </option>
+            <option data-group='Update Service' value="Filtering and Disputes">Other Update Service Code </option>
+
+            <option data-group='Barring' value="Barring All barring enquiries (transferred or handled)">Barring All barring enquiries (transferred or handled) </option>
+
+            <option data-group='DBS Online Account' value="Creating an Account/Logging In">Creating an Account/Logging In </option>
+            <option data-group='DBS Online Account' value="DBS Online Code Enquiry Queries">DBS Online Code Enquiry Queries</option>
+            <option data-group='DBS Online Account' value="Memorable Word / Security Questions">Memorable Word / Security Questions </option>
+            <option data-group='DBS Online Account' value="Other Online Account Query">Other Online Account Query </option>
+
+            <option data-group='Temporary Category' value="Update Service Personal Details Error">Update Service Personal Details Error </option>
+            <option data-group='Temporary Category' value="Basic Applications">Basic Applications </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="exampleFormControlTextarea1">Comments:</label>
+          <textarea
+            id="call-reason"
+            class="form-control"
+            id="exampleFormControlTextarea1"
+            rows="3"
+          ></textarea>
+          <input
+            name="contactID"
+            type="hidden"
+            id="contactID"
+            placeholder="Contact ID"
+            style="width: 100px;"
+            readonly
+          />
+          <input
+            name="instanceARN"
+            type="hidden"
+            id="instanceARN"
+            style="width: 100px;"
+            readonly
+          />
+        </div>
+        <button type="submit" id="submit-button" class="btn btn-primary mb-2">
+          Submit
+        </button>
+<script>
+  $(function(){
+    $('#category').on('change', function(){
+      console.log("InDD")
+        var val = $(this).val();
+        var sub = $('#sub_category');
+        if(val == '--All--') {
+            $('#sub_category').find('option').show();
+        }
+        else {
+            sub.find('option').not(':first').hide();
+            $('option', sub).filter(function(){
+                if($(this).attr('data-group') == val){
+                    $(this).show();
+                }
+            });
+        }
+        sub.val(0);
+    });
+});
+   </script>
+        <!-- </form>  -->
+      </section>
+
+    </div>
+  </body>
+</html>
