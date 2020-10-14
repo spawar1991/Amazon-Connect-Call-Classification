@@ -113,6 +113,7 @@ Outputs:
 Resources:      
     createWebSiteS3Bucket:
             Type: 'AWS::S3::Bucket'
+            DeletionPolicy: Retain
             Properties:
                 BucketName: !Ref S3BucketNameForWebSite
                 BucketEncryption:
