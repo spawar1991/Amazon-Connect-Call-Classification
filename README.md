@@ -18,7 +18,7 @@ Getting started with this project is easy. The most basic use case of capturing 
 
 ## Easy Setup
 
-1. Make Sure You have Amazon Connect Instance Ready. you need amazon connect Insatance ID in order to successfully deploy the template.
+1. Make Sure You have Amazon Connect Instance Ready. Nou need amazon connect Instance ID in order to successfully deploy the template.
 2. Clone the github repo into your account.
 3. Create an S3 bucket and create a new folder “Deployment” and upload the deployment/ folder into it.
         Open the Call-classification-template-inline-lambda-v2.yaml file and copy the S3 url on it's detail page.
@@ -26,6 +26,9 @@ Getting started with this project is easy. The most basic use case of capturing 
 5. Go to CloudFormation and select 'Create Stack'.
         Create the stack from an S3 url and paste the url from the Call-classification-template-inline-lambda-v2.yaml file.
         Fill in the parameters for the stack. The existingLambdaZipsS3Bucket ,existingwebsiteS3KeyPrefix and existingwebsiteS3KeyPrefix should be the ones created above that contain all the deployment related code.
+6. Once the stack is complete, go to outputs section of the cloudformation stack. Copy the Cloudfront URL which is serving static website from s3 bucket.
+7. To access CCP Panel integrated into the S3 static website, you need to add the cloudfront URL as a Approved origin under application integration tab in Amazon Connect.
+8. Once you are done with the all the settings then you can access the Cloudfront URL and you'll be able to see CCP and ready to take calls. 
 
 # TroubleShooting
 
