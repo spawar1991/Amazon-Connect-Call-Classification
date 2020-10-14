@@ -6,6 +6,7 @@ Description: >
     - A Lambda triggered to update the call Classification contact attributes to the initial contact details
     - cloudfront URL which will be serving Static Website
     - APIGateway Endpoint Deployment with Lambda Authorizer
+    - lambda function to copy website assets from existing bucket to newly created bucket
     "
 
 Metadata:
