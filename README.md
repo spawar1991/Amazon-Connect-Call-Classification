@@ -16,6 +16,17 @@ This solution can be configured to use the following services: Amazon Connect, A
 
 Getting started with this project is easy. The most basic use case of capturing call classification in the Amazon Connect can be accomplished by downloading the pre-packaged Lambda Functions, deploying the CloudFormation template in your account, and importing pre-packaged the Static Website assets in S3 buckets.
 
+## Easy Setup
+
+1. Make Sure You have Amazon Connect Instance Ready. you need amazon connect Insatance ID in order to successfully deploy the template.
+2. Clone the github repo into your account.
+3. Create an S3 bucket and create a new folder “Deployment” and upload the deployment/ folder into it.
+        Open the Call-classification-template-inline-lambda-v2.yaml file and copy the S3 url on it's detail page.
+4. Create new folder WebsiteArtifacts into S3 bucket and upload the website/ folder into it.
+5. Go to CloudFormation and select 'Create Stack'.
+        Create the stack from an S3 url and paste the url from the Call-classification-template-inline-lambda-v2.yaml file.
+        Fill in the parameters for the stack. The existingLambdaZipsS3Bucket ,existingwebsiteS3KeyPrefix and existingwebsiteS3KeyPrefix should be the ones created above that contain all the deployment related code.
+
 # TroubleShooting
 
 ## AWS lambda: No module named 'cfnresponse'
