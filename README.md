@@ -31,8 +31,9 @@ Getting started with this project is easy. The most basic use case of capturing 
         Create the stack from an S3 url and paste the url from the Call-classification-template-inline-lambda-v2.yaml file.
         Fill in the parameters for the stack. The "existingLambdaZipsS3Bucket" ,"existingwebsiteS3KeyPrefix" and "existingwebsiteS3KeyPrefix" should be the ones created above that contain all the deployment related code.
 6. Once the stack is complete, go to "outputs" section of the cloudformation stack. Copy the Cloudfront URL which is serving static website from s3 bucket.
-7. To access CCP Panel integrated into the S3 static website, you need to add the cloudfront URL as a Approved origin under application integration tab in Amazon Connect.
-8. Once you are done with the all the settings then you can access the Cloudfront URL and you'll be able to see CCP and ready to take calls. 
+7. Since We are copying files from the central bucket, If you modify the central bucket file it wont automatically gets updated in the newly serving S3 bucket. So You can either add "Same region Replication" configutation on exisitng S3 bucket or manually perform code updation  on newly website serving bucket.
+8. To access CCP Panel integrated into the S3 static website, you need to add the cloudfront URL as a Approved origin under application integration tab in Amazon Connect.
+9. Once you are done with the all the settings then you can access the Cloudfront URL and you'll be able to see CCP and ready to take calls. 
 
 # TroubleShooting
 
