@@ -357,7 +357,7 @@ Resources:
                             responseData['statusCode'] = str(e)
                             cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
             Description: "Function to copy website assets from Cental S3 bucket to the S3 Website Bucket (Within the same AWS Account)"
-            FunctionName: !Sub "${AWS::StackName}-${AWS::Region}-CopyFromSourceToDestinationBucket"
+            FunctionName: !Sub "${AWS::StackName}-CopyFromSourceToDestination"
             Handler: "index.handler"
             MemorySize: 256
             Role: !GetAtt "lambdacopyartifactsIAMExecutionRole.Arn"
