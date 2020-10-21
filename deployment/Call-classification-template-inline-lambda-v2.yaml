@@ -219,8 +219,10 @@ Resources:
           StageName: !Ref "ApiGatewayStageName"
           RestApiId: !Ref "APIGatewayRestApi"
           DeploymentId: !Ref "apiGatewayDeployment"
+          Variables:
+            Stack: Prod
           MethodSettings:
-            - ResourcePath: "/hmrc"
+            - ResourcePath: "/stack"
               HttpMethod: POST
               MetricsEnabled: True
               DataTraceEnabled: True
