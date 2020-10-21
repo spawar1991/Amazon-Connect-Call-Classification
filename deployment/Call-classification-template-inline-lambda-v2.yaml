@@ -213,6 +213,24 @@ Resources:
             FailOnWarnings : true
             Parameters:
                 endpointConfigurationTypes: REGIONAL
+    APIGatewayStage:
+        Type: AWS::ApiGateway::Stage
+        Properties:
+          StageName: !Ref "ApiGatewayStageName"
+          RestApiId: !Ref "APIGatewayRestApi"
+          DeploymentId: !Ref "apiGatewayDeployment"
+          MethodSettings:
+            - ResourcePath: "/hmrc"
+              HttpMethod: POST
+              MetricsEnabled: True
+              DataTraceEnabled: True
+    apiGatewayDeployment:
+        Type: "AWS::ApiGateway::Deployment"
+        DependsOn:
+            - "APIGatewayRestApi"
+            - "ApiGatewayRootMethod"
+        Properties:
+            RestApiId: !Ref "APIGatewayRestApi"
     ApiGatewayStack:
         Type: "AWS::ApiGateway::Resource"
         Properties: 
@@ -247,13 +265,32 @@ Resources:
                     method.response.header.Access-Control-Allow-Origin: False
             ResourceId: !Ref "ApiGatewayStack"
             RestApiId: !Ref "APIGatewayRestApi"
-    apiGatewayDeployment:
-        Type: "AWS::ApiGateway::Deployment"
-        DependsOn:
-            - "ApiGatewayRootMethod"
+    APIGWOptionsMethod:
+        Type: AWS::ApiGateway::Method
         Properties:
-            RestApiId: !Ref "APIGatewayRestApi"
-            StageName: !Ref "ApiGatewayStageName"
+          ResourceId: !Ref ApiGatewayStack
+          RestApiId: !Ref APIGatewayRestApi
+          HttpMethod: OPTIONS
+          AuthorizationType: NONE
+          Integration:
+            Type: MOCK
+            IntegrationResponses:
+              - StatusCode: 200
+                ResponseParameters:
+                  method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                  method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+                  method.response.header.Access-Control-Allow-Origin: "'*'"
+            PassthroughBehavior: WHEN_NO_MATCH
+            RequestTemplates:
+              application/json: "{'statusCode': 200}"
+          MethodResponses:
+            - StatusCode: 200
+              ResponseModels:
+                application/json: "Empty"
+              ResponseParameters:
+                method.response.header.Access-Control-Allow-Origin: False
+                method.response.header.Access-Control-Allow-Headers: False
+                method.response.header.Access-Control-Allow-Methods: False
     CallclassificationupdateattributeslambdaFunction:
         Type: "AWS::Lambda::Function"
         Properties:
